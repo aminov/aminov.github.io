@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertical Swipe Card Feed</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #fafafa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .app-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .app-title {
+      position: absolute;
+      top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      z-index: 100;
+    }
+    
+    .card-stack-container {
+      position: relative;
+      width: 300px;
+      height: 500px;
+      perspective: 1000px;
+    }
+    
+    .card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+      background-color: white;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      transform-origin: center bottom;
+      will-change: transform, opacity;
+      touch-action: none;
+    }
+    
+    .card-content {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .card-image {
+      width: 100%;
+      height: 65%;
+      background-size: cover;
+      background-position: center;
+    }
+    
+    .card-info {
+      padding: 20px;
+      height: 35%;
+    }
+    
+    .card-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .card-description {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.4;
+    }
+    
+    .card-index {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    .swipe-instruction {
+      position: absolute;
+      bottom: 30px;
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      width: 80%;
+      max-width: 300px;
+    }
+    
+    .reload-button {
+      position: absolute;
+      bottom: 70px;
+      padding: 10px 20px;
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 16px;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    }
+    
+    .reload-button:hover {
+      background-color: #3a80d2;
+    }
+    
+    .card-badge {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-15deg);
+      padding: 10px 20px;
+      font-size: 28px;
+      text-transform: uppercase;
+      font-weight: bold;
+      border: 4px solid;
+      border-radius: 10px;
+      opacity: 0;
+      z-index: 10;
+    }
+    
+    .badge-seen {
+      color: #4a90e2;
+      border-color: #4a90e2;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-title">Card Feed</div>
+    
+    <div class="card-stack-container" id="card-stack">
+      <!-- Cards will be dynamically added here -->
+    </div>
+    
+    <div class="swipe-instruction">Swipe card up to dismiss</div>
+    
+    <button class="reload-button" id="reload-button">Reload Cards</button>
+  </div>
+  
+  <script>
+    // Sample card data
+    const cardData = [
+      {
+        title: "Morning Hike Views",
+        description: "Amazing sunrise captured during an early morning hike in the mountains.",
+        imageColor: "#5DA271" // Using colors instead of images for the prototype
+      },
+      {
+        title: "City Lights",
+        description: "Downtown skyline with all its vibrant colors and energy at night.",
+        imageColor: "#4A90E2"
+      },
+      {
+        title: "Beach Sunset",
+        description: "Golden hour at the beach. Perfect end to a perfect day.",
+        imageColor: "#E29C4A"
+      },
+      {
+        title: "Forest Exploration",
+        description: "Deep in the woods finding peace and solitude among ancient trees.",
+        imageColor: "#2E7D32"
+      },
+      {
+        title: "Desert Adventure",
+        description: "Vast open landscapes and incredible rock formations in the desert.",
+        imageColor: "#D68227"
+      },
+      {
+        title: "Urban Street Art",
+        description: "Colorful murals bringing life to city walls and telling powerful stories.",
+        imageColor: "#8E44AD"
+      },
+      {
+        title: "Winter Wonderland",
+        description: "Magical snow-covered landscape after the first snowfall of the season.",
+        imageColor: "#7FB3D5"
+      },
+      {
+        title: "Autumn Colors",
+        description: "Vibrant red and orange leaves lining a peaceful forest path.",
+        imageColor: "#CB4335"
+      }
+    ];
+    
+    // DOM Elements
+    const cardStack = document.getElementById('card-stack');
+    const reloadButton = document.getElementById('reload-button');
+    
+    // State variables
+    let currentIndex = 0;
+    let cards = [];
+    let isDragging = false;
+    const MAX_VISIBLE_CARDS = 3;
+    const SWIPE_THRESHOLD = 150; // Vertical distance threshold to trigger a swipe
+    
+    // Create and return a card element from data
+    function createCard(data, index) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.index = index;
+      
+      // Add badge
+      const badge = document.createElement('div');
+      badge.className = 'card-badge badge-seen';
+      badge.textContent = 'Seen';
+      card.appendChild(badge);
+      
+      // Create card content
+      const content = document.createElement('div');
+      content.className = 'card-content';
+      
+      // Image area
+      const image = document.createElement('div');
+      image.className = 'card-image';
+      image.style.backgroundColor = data.imageColor;
+      content.appendChild(image);
+      
+      // Card index indicator
+      const cardIndex = document.createElement('div');
+      cardIndex.className = 'card-index';
+      cardIndex.textContent = index + 1;
+      image.appendChild(cardIndex);
+      
+      // Info area
+      const info = document.createElement('div');
+      info.className = 'card-info';
+      
+      const title = document.createElement('div');
+      title.className = 'card-title';
+      title.textContent = data.title;
+      info.appendChild(title);
+      
+      const description = document.createElement('div');
+      description.className = 'card-description';
+      description.textContent = data.description;
+      info.appendChild(description);
+      
+      content.appendChild(info);
+      card.appendChild(content);
+      
+      return card;
+    }
+    
+    // Initialize the card stack
+    function initializeCardStack() {
+      // Clear existing cards
+      cardStack.innerHTML = '';
+      cards = [];
+      
+      // Hide reload button
+      reloadButton.style.display = 'none';
+      
+      // Create initial visible cards
+      const numCards = Math.min(MAX_VISIBLE_CARDS, cardData.length);
+      
+      for (let i = 0; i < numCards; i++) {
+        const cardIndex = (currentIndex + i) % cardData.length;
+        const card = createCard(cardData[cardIndex], cardIndex);
+        cardStack.appendChild(card);
+        cards.push(card);
+        
+        // Position the card in the stack with proper styling
+        positionCardInStack(card, i);
+        
+        // Only the top card gets touch gestures
+        if (i === 0) {
+          initializeGestures(card);
+        }
+      }
+    }
+    
+    // Position a card in the stack based on its position (0 = top card)
+    function positionCardInStack(card, position) {
+      // Base transformations
+      let scaleValue = 1 - (position * 0.05);
+      let yOffset = position * 20;
+      let rotation = (position % 2 === 0) ? position * -1 : position;
+      let zIndex = 100 - position;
+      let opacity = 1 - (position * 0.2);
+      let blur = position * 1; // px of blur
+      
+      // Apply transformations
+      card.style.transform = `translateY(${yOffset}px) scale(${scaleValue}) rotate(${rotation}deg)`;
+      card.style.zIndex = zIndex;
+      card.style.opacity = opacity;
+      card.style.filter = `blur(${blur}px)`;
+    }
+    
+    // Initialize Hammer.js gesture recognition for a card
+    function initializeGestures(card) {
+      const hammer = new Hammer(card);
+      hammer.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+      
+      // Variables to track drag state
+      let startY = 0;
+      let currentY = 0;
+      
+      hammer.on('panstart', (e) => {
+        isDragging = true;
+        startY = 0;
+        card.style.transition = 'none';
+      });
+      
+      hammer.on('pan', (e) => {
+        if (!isDragging) return;
+        
+        currentY = e.deltaY;
+        
+        // Don't allow dragging down (only up)
+        if (currentY > 0) {
+          currentY = 0;
+        }
+        
+        // Calculate rotation based on horizontal offset
+        const rotation = (e.deltaX * 0.1); // Slight rotation based on any horizontal movement
+        
+        // Calculate opacity and scale based on distance
+        const distance = Math.abs(currentY);
+        const opacity = Math.max(1 - distance / 500, 0.5);
+        const scale = Math.max(1 - distance / 1000, 0.8);
+        
+        // Update card transform
+        card.style.transform = `translateY(${currentY}px) rotate(${rotation}deg) scale(${scale})`;
+        card.style.opacity = opacity;
+        
+        // Show badge if past threshold
+        const badge = card.querySelector('.card-badge');
+        if (distance > SWIPE_THRESHOLD) {
+          badge.style.opacity = Math.min((distance - SWIPE_THRESHOLD) / 50, 1);
+        } else {
+          badge.style.opacity = 0;
+        }
+      });
+      
+      hammer.on('panend', (e) => {
+        isDragging = false;
+        card.style.transition = 'transform 0.5s, opacity 0.5s';
+        
+        if (Math.abs(currentY) > SWIPE_THRESHOLD) {
+          // Past threshold - swipe away
+          dismissCard(card);
+        } else {
+          // Not past threshold - snap back
+          snapCardBack(card);
+        }
+      });
+    }
+    
+    // Animate a card being dismissed
+    function dismissCard(card) {
+      // Get the height of the window and add buffer
+      const windowHeight = window.innerHeight;
+      
+      // Animate card moving off screen
+      anime({
+        targets: card,
+        translateY: -windowHeight - 200, // Move up off screen
+        rotate: Math.random() < 0.5 ? -15 : 15, // Random rotation
+        scale: 0.7,
+        opacity: 0,
+        duration: 600,
+        easing: 'easeInQuad',
+        complete: function() {
+          // Remove the card from DOM
+          card.remove();
+          
+          // Advance the index
+          currentIndex = (currentIndex + 1) % cardData.length;
+          
+          // Update the card array
+          cards.shift();
+          
+          // Check if we need to show reload button (end of cards)
+          if (cards.length === 0) {
+            reloadButton.style.display = 'block';
+            return;
+          }
+          
+          // Promote remaining cards
+          promoteCards();
+          
+          // Add a new card at the end if needed
+          if (cards.length < MAX_VISIBLE_CARDS) {
+            const nextCardIndex = (currentIndex + cards.length) % cardData.length;
+            const newCard = createCard(cardData[nextCardIndex], nextCardIndex);
+            cardStack.appendChild(newCard);
+            cards.push(newCard);
+            positionCardInStack(newCard, cards.length - 1);
+          }
+        }
+      });
+    }
+    
+    // Animate a card snapping back to its original position
+    function snapCardBack(card) {
+      anime({
+        targets: card,
+        translateY: 0,
+        rotate: 0,
+        scale: 1,
+        opacity: 1,
+        duration: 600,
+        easing: 'spring(1, 80, 10, 0)'
+      });
+      
+      // Hide badge
+      const badge = card.querySelector('.card-badge');
+      badge.style.opacity = 0;
+    }
+    
+    // Animate cards moving up in the stack
+    function promoteCards() {
+      cards.forEach((card, index) => {
+        // Animate to new position
+        anime({
+          targets: card,
+          translateY: index * 20,
+          scale: 1 - (index * 0.05),
+          rotate: (index % 2 === 0) ? index * -1 : index,
+          opacity: 1 - (index * 0.2),
+          filter: `blur(${index * 1}px)`,
+          duration: 400,
+          easing: 'easeOutQuad',
+          complete: function() {
+            // Update z-index after animation
+            card.style.zIndex = 100 - index;
+            
+            // Add gestures to the new top card
+            if (index === 0) {
+              initializeGestures(card);
+            }
+          }
+        });
+      });
+    }
+    
+    // Setup reload button
+    reloadButton.addEventListener('click', () => {
+      currentIndex = 0;
+      initializeCardStack();
+    });
+    
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initializeCardStack();
+    });
+  </script>
+</body>
+</html>
