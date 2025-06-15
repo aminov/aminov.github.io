@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Simple Mobile App</title>
+</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #app {
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for modern browsers */
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: #007AFF;
+            color: white;
+            padding: 1rem;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 1rem;
+            background: white;
+        }
+        
+        .content {
+            max-width: 100%;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Safari-specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            #app {
+                height: -webkit-fill-available;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            Mobile App
+        </header>
+        
+        <main class="main">
+            <div class="content">
+                <h2>Main Content</h2>
+                <p>This layout adapts to keyboard opening/closing automatically.</p>
+                
+                <input placeholder="Type something...">
+                <textarea placeholder="Longer text..." rows="4"></textarea>
+                
+                <div id="content-items"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Generate content items
+        const contentItems = document.getElementById('content-items');
+        for (let i = 1; i <= 20; i++) {
+            const p = document.createElement('p');
+            p.textContent = `Content item ${i}`;
+            contentItems.appendChild(p);
+        }
+    </script>
+</body>
+</html>
