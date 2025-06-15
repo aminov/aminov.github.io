@@ -15,6 +15,7 @@
         html, body {
             height: 100%;
             overflow: hidden;
+            background: #f5f5f5;
         }
         
         #app {
@@ -23,6 +24,11 @@
             display: flex;
             flex-direction: column;
             background: #f5f5f5;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
         
         .header {
@@ -63,6 +69,10 @@
             #app {
                 height: -webkit-fill-available;
             }
+            
+            html, body {
+                height: -webkit-fill-available;
+            }
         }
     </style>
 </head>
@@ -86,13 +96,31 @@
     </div>
 
     <script>
-        // Generate content items
-        const contentItems = document.getElementById('content-items');
-        for (let i = 1; i <= 20; i++) {
-            const p = document.createElement('p');
-            p.textContent = `Content item ${i}`;
-            contentItems.appendChild(p);
+        // Handle keyboard on Safari
+        function adjustForKeyboard() {
+            if (window.visualViewport) {
+                const app = document.getElementById('app');
+                const updateHeight = () => {
+                    app.style.height = window.visualViewport.height + 'px';
+                };
+                
+                window.visualViewport.addEventListener('resize', updateHeight);
+                updateHeight(); // Initial call
+            }
         }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            adjustForKeyboard();
+            
+            // Generate content items
+            const contentItems = document.getElementById('content-items');
+            for (let i = 1; i <= 20; i++) {
+                const p = document.createElement('p');
+                p.textContent = `Content item ${i}`;
+                contentItems.appendChild(p);
+            }
+        });
     </script>
 </body>
 </html>
